@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambahsatu</title>
+</head>
+<body>
+    <div id="counter-container">
+        <div id="count">0</div>
+        <div id="label">Pencet</div>
+    </div>
+
+    <button id="reset-btn">Reset</button>
+
+    <script>
+        const body = document.body;
+        const countDisplay = document.getElementById('count');
+        const resetBtn = document.getElementById('reset-btn');
+        let count = 0;
+
+        body.addEventListener('click', function(e) {
+            if(e.target.id === 'reset-btn') return;
+
+            count++;
+            countDisplay.innerText = count;
+
+            countDisplay.style.transform = "scale(1.2)";
+            setTimeout(() => countDisplay.style.transform = "scale(1)");
+
+            resetBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                count= 0;
+                countDisplay.innerText = count;
+            })
+        })
+    </script>
+</body>
+</html>
