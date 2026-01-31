@@ -4,14 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tambahsatu</title>
+    <title>Tambahsatu Optimized</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            /* Hilangkan highlight biru di Android */
         }
 
         body {
@@ -26,35 +25,45 @@
             align-items: center;
             justify-content: center;
             user-select: none;
-            /* Mencegah teks terblok saat tap cepat */
             cursor: pointer;
-            /* Indikator bahwa layar bisa diklik */
-
         }
 
         #counter-container {
             text-align: center;
             z-index: 10;
             pointer-events: none;
+            /* Optimasi: Memberi tahu browser elemen ini akan sering berubah */
+            will-change: transform; 
         }
 
         #count {
             font-size: 6rem;
             font-weight: bold;
             text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            transition: transform 0.1s ease;
+            /* Hapus transition disini, kita pindah ke class animasi */
         }
 
-        #label {
-            font-size: 1.2rem;
-            opacity: 0.8;
-            letter-spacing: 2px;
-            margin-top: -10px;
+        /* Class khusus animasi angka (Hardware Accelerated) */
+        .pop-anim {
+            animation: pop 0.1s ease-out;
         }
 
-        #reset-btn {
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .btn-container {
             position: absolute;
             bottom: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 20;
+            cursor: default; /* Kursor normal di area tombol */
+        }
+
+        .btn {
             padding: 12px 24px;
             background-color: rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.4);
@@ -63,30 +72,24 @@
             font-size: 1rem;
             cursor: pointer;
             backdrop-filter: blur(5px);
-            transition: all 0.3s ease;
-            z-index: 20;
-            /* Paling atas */
+            transition: transform 0.1s ease, background-color 0.2s;
         }
 
-        #reset-btn:hover {
-            background-color: rgba(255, 255, 255, 0.4);
-            transform: scale(1.05);
-        }
-
-        #reset-btn:active {
-            transform: scale(0.95);
-        }
+        .btn:active { transform: scale(0.95); }
+        .btn.disabled { opacity: 0.6; background-color: rgba(0, 0, 0, 0.2); }
 
         .effect {
             position: absolute;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.4);
-            transform: scale(0);
+            transform: scale(0); /* Start state */
             pointer-events: none;
-            animation: animasi 0.6s linear;
+            /* Optimasi: Animasi dipisah ke class aktif untuk kontrol lebih baik */
+            animation: ripple 0.6s linear forwards;
+            will-change: transform, opacity;
         }
 
-        @keyframes animasi {
+        @keyframes ripple {
             to {
                 transform: scale(4);
                 opacity: 0;
@@ -98,52 +101,91 @@
 <body>
     <div id="counter-container">
         <div id="count">0</div>
-        <div id="label">Pencet</div>
+    </div>
+    
+    <div class="btn-container" id="btn-area">
+        <button id="effect-btn" class="btn">Animasi</button>
+        <button id="reset-btn" class="btn">Reset</button>
     </div>
 
-    <button id="reset-btn">Reset</button>
-
     <script>
+        // Cache DOM elements 
         const body = document.body;
         const countDisplay = document.getElementById('count');
         const resetBtn = document.getElementById('reset-btn');
+        const effectBtn = document.getElementById('effect-btn');
+        const btnArea = document.getElementById('btn-area');
+
         let count = 0;
+        let isEffectOn = true;
 
-        function createEffect(x, y) {
-            const circle = document.createElement('span');
-            const diameter = 100;
-            const radius = diameter / 2;
+        // Fungsi Update UI terpisah
+        const updateDisplay = () => {
+            // Optimasi: textContent lebih cepat dari innerText
+            countDisplay.textContent = count;
+            
+            // Optimasi: Trigger CSS Reflow dengan class, bukan inline style
+            // Teknik: Remove -> void offsetWidth -> Add (untuk restart animasi)
+            countDisplay.classList.remove('pop-anim');
+            void countDisplay.offsetWidth; // Hack untuk memaksa browser reset animasi
+            countDisplay.classList.add('pop-anim');
+        };
 
-            circle.style.width = circle.style.height = `${diameter}px`;
-            circle.style.left = `${x - radius}px`;
-            circle.style.top = `${y - radius}px`;
-            circle.classList.add('effect');
+        const createEffect = (x, y) => {
+            // Gunakan requestAnimationFrame agar pembuatan elemen sinkron dengan refresh rate layar
+            requestAnimationFrame(() => {
+                const circle = document.createElement('span');
+                const diameter = 100;
+                
+                // Set style langsung saat create
+                circle.style.width = circle.style.height = '100px'; 
+                circle.style.left = (x - 50) + 'px'; // Hardcode radius (50) hitungan matematik JS lebih cepat drpd CSS string concat
+                circle.style.top = (y - 50) + 'px';
+                circle.className = 'effect';
 
-            const effect = body.appendChild(circle);
-            setTimeout(() => {
-                effect.remove();
-            }, 600);
-        }
+                body.appendChild(circle);
 
-        body.addEventListener('click', function (e) {
-            if (e.target.id === 'reset-btn') return;
+                // Cleanup: Hapus elemen setelah animasi selesai (600ms)
+                // Menggunakan setTimeout cukup aman disini
+                setTimeout(() => {
+                    circle.remove();
+                }, 600);
+            });
+        };
 
+        // EVENT LISTENER UTAMA (BODY)
+        body.addEventListener('click', (e) => {
+            // Kita tidak perlu cek ID tombol lagi karena event di tombol sudah di stop (stopPropagation)
+            
             count++;
-            countDisplay.innerText = count;
+            updateDisplay();
 
-            countDisplay.style.transform = "scale(1.2)";
-            setTimeout(() => countDisplay.style.transform = "scale(1)");
-
-            createEffect(e.clientX, e.clientY);
+            if (isEffectOn) {
+                createEffect(e.clientX, e.clientY);
+            }
         });
 
-        resetBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            count = 0;
-            countDisplay.innerText = count;
+        // OPTIMASI: Event Delegation untuk tombol
+        // Alih-alih pasang listener di setiap tombol, pasang di container-nya
+        // Dan yang terpenting: stopPropagation disini agar tidak menembus ke Body
+        btnArea.addEventListener('click', (e) => {
+            e.stopPropagation(); // KUNCI: Mencegah klik tombol dihitung sebagai counter
+
+            const target = e.target;
+
+            // Logic Reset
+            if (target === resetBtn) {
+                count = 0;
+                countDisplay.textContent = count;
+            }
+
+            // Logic Effect Toggle
+            if (target === effectBtn) {
+                isEffectOn = !isEffectOn;
+                target.classList.toggle('disabled', !isEffectOn);
+            }
         });
 
     </script>
 </body>
-
 </html>
