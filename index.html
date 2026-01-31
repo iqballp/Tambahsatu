@@ -3,14 +3,15 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tambahsatu</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent; /* Hilangkan highlight biru di Android */
+            -webkit-tap-highlight-color: transparent;
+            /* Hilangkan highlight biru di Android */
         }
 
         body {
@@ -24,9 +25,11 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            user-select: none; /* Mencegah teks terblok saat tap cepat */
-            cursor: pointer; /* Indikator bahwa layar bisa diklik */
-            
+            user-select: none;
+            /* Mencegah teks terblok saat tap cepat */
+            cursor: pointer;
+            /* Indikator bahwa layar bisa diklik */
+
         }
 
         #counter-container {
@@ -38,15 +41,17 @@
         #count {
             font-size: 6rem;
             font-weight: bold;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
             transition: transform 0.1s ease;
         }
+
         #label {
             font-size: 1.2rem;
             opacity: 0.8;
             letter-spacing: 2px;
             margin-top: -10px;
         }
+
         #reset-btn {
             position: absolute;
             bottom: 30px;
@@ -59,8 +64,10 @@
             cursor: pointer;
             backdrop-filter: blur(5px);
             transition: all 0.3s ease;
-            z-index: 20; /* Paling atas */
+            z-index: 20;
+            /* Paling atas */
         }
+
         #reset-btn:hover {
             background-color: rgba(255, 255, 255, 0.4);
             transform: scale(1.05);
@@ -68,6 +75,22 @@
 
         #reset-btn:active {
             transform: scale(0.95);
+        }
+
+        .effect {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0);
+            pointer-events: none;
+            animation: animasi 0.6s linear;
+        }
+
+        @keyframes animasi {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -86,6 +109,22 @@
         const resetBtn = document.getElementById('reset-btn');
         let count = 0;
 
+        function createEffect(x, y) {
+            const circle = document.createElement('span');
+            const diameter = 100;
+            const radius = diameter / 2;
+
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${x - radius}px`;
+            circle.style.top = `${y - radius}px`;
+            circle.classList.add('effect');
+
+            const effect = body.appendChild(circle);
+            setTimeout(() => {
+                effect.remove();
+            }, 600);
+        }
+
         body.addEventListener('click', function (e) {
             if (e.target.id === 'reset-btn') return;
 
@@ -95,12 +134,15 @@
             countDisplay.style.transform = "scale(1.2)";
             setTimeout(() => countDisplay.style.transform = "scale(1)");
 
-            resetBtn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                count = 0;
-                countDisplay.innerText = count;
-            })
-        })
+            createEffect(e.clientX, e.clientY);
+        });
+
+        resetBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            count = 0;
+            countDisplay.innerText = count;
+        });
+
     </script>
 </body>
 
